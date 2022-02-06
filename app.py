@@ -10,13 +10,17 @@ from watchdog.events import FileSystemEventHandler
 app = Flask(__name__)
 analyzer = Analyzer(
     ['Team 1', 'Team 2'],
-    [['AK47H', 'Krawi', 'Foreshadow', 'TR33', 'Paintbrush', 'cjay'],
-     ['jishua', 'Soko', 'Thunda', 'Doomed', 'Vega', 'moszer']])
+    [['Player1', 'Player2', 'Player3', 'Player4', 'Player5', 'Player6'],
+     ['Player1', 'Player2', 'Player3', 'Player4', 'Player5', 'Player6']])
+
+testData = []
+testDataIdx = 0
 
 DataPoints = {
     'Name': 'Player',
     'Role': 'Role',
     'Hero': 'Hero',
+    'Impact Score': 'Impact',
     'Final Blows': 'FBs',
     'Eliminations': 'Elims',
     'Deaths': 'Deaths',
@@ -25,8 +29,7 @@ DataPoints = {
     'Healing Dealt': 'Heals Given',
     'Damage Blocked': 'Dmg Blocked',
     'Damage Taken': 'Dmg Taken',
-    'Ultimates Earned': 'Ults Earned',
-    'Ultimates Used': 'Ults Used'
+    'Ultimates Used / Ultimates Earned': 'Ults Used / Earned'
 }
 
 WatchingFile = ''
@@ -46,6 +49,7 @@ readLines = set()
 
 
 def checkForUpdates():
+    global testDataIdx
     if WatchingFile != '':
         newLines = []
         with open(WatchingFile, 'r') as f:
@@ -55,6 +59,10 @@ def checkForUpdates():
         for line in newLines:
             analyzer.processLine(line)
             readLines.add(line)
+    if testDataIdx > 0:
+        for i in range(testDataIdx, testDataIdx + 13):
+            analyzer.processLine(testData[i])
+        testDataIdx += (13 * 5)
 
 
 @app.route('/')
@@ -70,6 +78,11 @@ def toggle_per_10():
 @app.route('/data_table/<int:team_id>')
 def data_table(team_id):
     return json.dumps(analyzer.dumpTable(team_id))
+
+
+@app.route('/data_table_delta')
+def data_table_delta():
+    return json.dumps(analyzer.dumpTableDelta())
 
 
 @app.route('/data_json')
@@ -102,8 +115,9 @@ if __name__ == "__main__":
     else:
         with open('samples/sample1.txt', 'r') as f:
             testData = [line for line in f]
-        for i in range(0, 1000):
+        for i in range(0, 3):
             analyzer.processLine(testData[i])
+            testDataIdx = 3
 
     # start watch agent
     event_handler = LogFileHandler()

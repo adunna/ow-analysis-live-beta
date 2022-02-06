@@ -36,61 +36,63 @@
               </tr>
               <tr>
                 <th scope="row">Stats</th>
-                <td id="game-stats-mode">Cumulative</td>
+                <td><span id="game-stats-mode" style="padding-right: 1em;">Cumulative</span><button id="toggle10" type="button" class="btn btn-primary">
+                  Toggle / 10 min
+                </button></td>
               </tr>
               <tr>
-                <th scope="row">Map Time (s)</th>
+                <th scope="row">Map Time</th>
                 <td id="game-map-time">0</td>
               </tr>
             </tbody>
-          </table>
+          </table><br>
+          <h3>Top &#x0394; Impact Score (every 5 seconds)</h2>
+            <table
+              id="table-delta-impact-scores"
+              data-auto-refresh="true"
+              data-auto-refresh-interval="1"
+              data-show-auto-refresh="false"
+              data-url="/data_table_delta"
+            >
+              <thead>
+                <tr>
+                  <th data-field="Player">Player</th>
+                  <th data-field="Team">Team</th>
+                  <th data-field="DeltaImpactScore">&#x0394; Impact Score</th>
+                </tr>
+              </thead>
+            </table>
         </div>
-        <div class="col-sm" style="text-align: right">
-          <button id="toggle10" type="button" class="btn btn-primary">
-            Toggle / 10 min
-          </button>
+        <div class="col-sm">
+          <div>
+            <canvas id="impactScoreChart"></canvas>
+          </div>
         </div>
       </div>
     </div>
 
     <div class="container-fluid">
       <div class="row">
-        <div class="col-sm">
-          <h3 id="team1-name">Team 1</h2>
-          <table
-            id="table1"
-            data-auto-refresh="true"
-            data-auto-refresh-interval="1"
-            data-show-auto-refresh="false"
-            data-url="/data_table/0"
-          >
-            <thead>
-              <tr>
-                {%for pt in points%}
-                <th data-field="{{pt}}">{{points[pt]}}</th>
-                {%endfor%}
-              </tr>
-            </thead>
-          </table>
-        </div>
-        <div class="col-sm">
-          <h3 id="team2-name">Team 2</h2>
-          <table
-            id="table2"
-            data-auto-refresh="true"
-            data-auto-refresh-interval="1"
-            data-show-auto-refresh="false"
-            data-url="/data_table/1"
-          >
-            <thead>
-              <tr>
-                {%for pt in points%}
-                <th data-field="{{pt}}">{{points[pt]}}</th>
-                {%endfor%}
-              </tr>
-            </thead>
-          </table>
-        </div>
+        {%for teamNumber in range(0, 2)%}
+          <div class="col-sm">
+            <h3 id="team{{teamNumber+1}}-name">Team {{teamNumber+1}}</h2>
+            <table
+              id="table{{teamNumber+1}}"
+              data-auto-refresh="true"
+              data-auto-refresh-interval="1"
+              data-show-auto-refresh="false"
+              data-url="/data_table/{{teamNumber}}"
+            >
+              <thead>
+                <tr>
+                  {%for pt in points%}
+                  <th data-field="{{pt}}">{{points[pt]}}</th>
+                  {%endfor%}
+                </tr>
+              </thead>
+            </table>
+          </div>
+        {%endfor%}
       </div>
     </div>
 
@@ -99,6 +101,8 @@
     <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/bootstrap-table.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/bootstrap-table-auto-refresh.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chartjs-adapter-date-fns.bundle.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/custom.js') }}"></script>
   </body>
 </html>

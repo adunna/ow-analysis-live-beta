@@ -1,3 +1,6 @@
+import datetime
+import time
+
 # Given a chunk of a log file, extract relevant portions for stats
 
 STAT_MAP = {
@@ -20,10 +23,7 @@ STAT_MAP = {
     18: ('Ultimate Charge', float)
 }  # index: (name, type)
 
-ROLE_MAP = [
-    'Main Tank', 'Off Tank', 'Hitscan DPS', 'Flex DPS', 'Main Support',
-    'Flex Support'
-]
+ROLE_MAP = ['MT', 'OT', 'HSDPS', 'FDPS', 'MS', 'FS']
 
 
 class PlayerStat:
@@ -49,6 +49,7 @@ class Analyzer:
         self.PerTen = False
         self.MinDuration = 999999
         self.MaxDuration = 0
+        self.StartTime = int(time.time())
         for teamNumber in range(0, 2):
             teamPlayerStats = []
             for playerSlot in range(0, 6):
@@ -57,6 +58,11 @@ class Analyzer:
                                ROLE_MAP[playerSlot], teamNumber,
                                teams[teamNumber]))
             self.PlayerStats.append(teamPlayerStats)
+        self.PrevImpactScores = [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+        self.ImpactScores = [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+        self.ImpactDataPoints = []
+        self.ImpactUpdateIndx = 0
+        self.ImpactUpdateInterval = 4
 
     def processLine(self, line):
         line = line[11:].strip().split(',')
@@ -76,6 +82,26 @@ class Analyzer:
                     # could not update number for some reason
                     print("ENCOUNTERED BUT CONTINUING: " + str(e))
                     pass
+            if 'Hero Damage Dealt' in self.PlayerStats[teamNumber][
+                    playerSlot].Stats and 'Barrier Damage Dealt' in self.PlayerStats[
+                        teamNumber][playerSlot].Stats and 'Eliminations' in self.PlayerStats[
+                            teamNumber][playerSlot].Stats and 'Deaths' in self.PlayerStats[
+                                teamNumber][
+                                    playerSlot].Stats and 'Healing Dealt' in self.PlayerStats[
+                                        teamNumber][playerSlot].Stats:
+                self.PlayerStats[teamNumber][playerSlot].Stats[
+                    'Impact Score'] = (self.PlayerStats[teamNumber][
+                        playerSlot].Stats['Hero Damage Dealt'] * 0.001) + (
+                            self.PlayerStats[teamNumber]
+                            [playerSlot].Stats['Barrier Damage Dealt'] * 0.001
+                        ) + (self.PlayerStats[teamNumber]
+                             [playerSlot].Stats['Healing Dealt'] *
+                             0.001) + (self.PlayerStats[teamNumber]
+                                       [playerSlot].Stats['Eliminations']) - (
+                                           self.PlayerStats[teamNumber]
+                                           [playerSlot].Stats['Deaths'])
+                self.ImpactScores[teamNumber][playerSlot] = self.PlayerStats[
+                    teamNumber][playerSlot].Stats['Impact Score']
 
     def togglePerTen(self):
         self.PerTen = not self.PerTen
@@ -90,27 +116,40 @@ class Analyzer:
                     'Role': self.PlayerStats[team][player].PlayerRole,
                     'Stats': self.PlayerStats[team][player].Stats
                 })
+        durationInSec = int(
+            self.MaxDuration -
+            self.MinDuration) if self.MinDuration < self.MaxDuration else 0
         return {
             'Map':
                 self.MapName,
             'DurationInSeconds':
-                int(self.MaxDuration - self.MinDuration)
-                if self.MinDuration < self.MaxDuration else 0,
+                durationInSec,
+            'Duration':
+                str(datetime.timedelta(seconds=durationInSec)),
             'StatsMode':
                 'Per 10 min' if self.PerTen else 'Cumulative',
             'Teams':
                 self.Teams,
             'PlayerStats':
-                playerStatsDump
+                playerStatsDump,
+            'ImpactScoreChartFormat': [[{
+                'x': (self.StartTime + durationInSec) * 1000,
+                'y':
+                    self.PlayerStats[team][player].Stats['Impact Score']
+                    if 'Impact Score' in self.PlayerStats[team][player].Stats
+                    else 0
+            } for player in range(0, 6)] for team in range(0, 2)]
         }
 
     def dumpTable(self, team):
         dataPoints = []
         for player in range(0, 6):
+
             dataPoint = {
                 'Name': self.PlayerStats[team][player].PlayerName,
                 'Role': self.PlayerStats[team][player].PlayerRole
             }
+
             for stat in self.PlayerStats[team][player].Stats:
                 pt = self.PlayerStats[team][player].Stats[stat]
                 if self.PerTen and type(pt) == float:
@@ -119,6 +158,49 @@ class Analyzer:
                               (self.MaxDuration - self.MinDuration)) * 10 * 60
                     else:
                         pt = 0
-                dataPoint[stat] = int(pt) if type(pt) == float else pt
+                if stat == 'Impact Score':
+                    dataPoint[stat] = round(pt, 2)
+                else:
+                    dataPoint[stat] = int(pt) if type(pt) == float else pt
+
+            if 'Ultimates Used' in self.PlayerStats[team][
+                    player].Stats and 'Ultimates Earned' in self.PlayerStats[
+                        team][player].Stats:
+                dataPoint['Ultimates Used / Ultimates Earned'] = "%s / %s" % (
+                    dataPoint['Ultimates Used'], dataPoint['Ultimates Earned'])
+            else:
+                dataPoint['Ultimates Used / Ultimates Earned'] = '0 / 0'
+
             dataPoints.append(dataPoint)
+        return dataPoints
+
+    def dumpTableDelta(self):
+        if (self.ImpactUpdateIndx == 0):
+            for team in range(0, 2):
+                for player in range(0, 6):
+                    self.PrevImpactScores[team][player] = self.ImpactScores[
+                        team][player]
+        if (self.ImpactUpdateIndx != self.ImpactUpdateInterval):
+            self.ImpactUpdateIndx += 1
+            return self.ImpactDataPoints
+        self.ImpactUpdateIndx = 0
+        playerImpactScoreDeltas = []
+        for team in range(0, 2):
+            for player in range(0, 6):
+                playerImpactScoreDeltas.append(
+                    (team, player, self.ImpactScores[team][player] -
+                     self.PrevImpactScores[team][player]))
+        playerImpactScoreDeltas.sort(key=lambda v: -v[2])
+        dataPoints = []
+        for i in range(0, 3):
+            dataPoints.append({
+                'Player':
+                    self.PlayerStats[playerImpactScoreDeltas[i][0]]
+                    [playerImpactScoreDeltas[i][1]].PlayerName,
+                'Team':
+                    self.Teams[playerImpactScoreDeltas[i][0]],
+                'DeltaImpactScore':
+                    playerImpactScoreDeltas[i][2],
+            })
+        self.ImpactDataPoints = dataPoints
         return dataPoints
