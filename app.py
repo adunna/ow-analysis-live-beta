@@ -62,7 +62,7 @@ def checkForUpdates():
     if testDataIdx > 0:
         for i in range(testDataIdx, testDataIdx + 13):
             analyzer.processLine(testData[i])
-        testDataIdx += (13 * 5)
+        testDataIdx += (13)
 
 
 @app.route('/')
@@ -89,6 +89,13 @@ def data_table_delta():
 def data_json():
     checkForUpdates()
     return json.dumps(analyzer.dump())
+
+def autoPageUpdate(number):
+    return '<html><head><meta http-equiv="refresh" content="1"></head><body>' + str(number) + '</body></html>'
+
+@app.route('/data_json/team<int:team_id>/player<int:player_id>/<stat_name>')
+def data_json_playerstat(team_id, player_id, stat_name):
+    return '<html><head><meta http-equiv="refresh" content="1"></head><body>' + str(analyzer.PlayerStats[0][0].Stats[stat_name]) + '</body></html>'
 
 
 if __name__ == "__main__":

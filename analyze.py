@@ -1,5 +1,6 @@
 import datetime
 import time
+#from pynput.keyboard import Key, Controller
 
 # Given a chunk of a log file, extract relevant portions for stats
 
@@ -62,7 +63,9 @@ class Analyzer:
         self.ImpactScores = [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
         self.ImpactDataPoints = []
         self.ImpactUpdateIndx = 0
-        self.ImpactUpdateInterval = 4
+        self.ImpactUpdateInterval = 2
+        #self.keyboard = Controller()
+        #self.prevToPressVal = None
 
     def processLine(self, line):
         line = line[11:].strip().split(',')
@@ -203,4 +206,11 @@ class Analyzer:
                     playerImpactScoreDeltas[i][2],
             })
         self.ImpactDataPoints = dataPoints
+        #if playerImpactScoreDeltas[0][2] > 1:
+        #    keyToPressVal = 'f' + str((playerImpactScoreDeltas[0][0]*6) + playerImpactScoreDeltas[0][1]+1)
+        #    if self.MaxDuration > 1 and self.prevToPressVal != keyToPressVal:
+        #        self.keyboard.press(getattr(Key, keyToPressVal))
+        #        self.keyboard.release(getattr(Key, keyToPressVal))
+        #        pass
+        #    self.prevToPressVal = keyToPressVal
         return dataPoints
