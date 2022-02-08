@@ -28,21 +28,21 @@ Would grab the Hero Damage Dealt for the first player on the left team (Team 1).
 
 The list of stats you can use:
 
-Impact Score
-Hero
-Hero Damage Dealt
-Barrier Damage Dealt
-Damage Blocked
-Damage Taken
-Deaths
-Eliminations
-Final Blows
-Environmental Deaths
-Environmental Kills
-Healing Dealt
-Objective Kills
-Solo Kills
-Ultimates Earned
-Ultimates Used
-Healing Received
-Ultimate Charge
+Impact Score  
+Hero  
+Hero Damage Dealt  
+Barrier Damage Dealt  
+Damage Blocked  
+Damage Taken  
+Deaths  
+Eliminations  
+Final Blows  
+Environmental Deaths  
+Environmental Kills  
+Healing Dealt  
+Objective Kills  
+Solo Kills  
+Ultimates Earned  
+Ultimates Used  
+Healing Received  
+Ultimate Charge  
